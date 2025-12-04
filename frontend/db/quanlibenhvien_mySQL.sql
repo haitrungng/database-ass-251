@@ -469,3 +469,71 @@ INSERT INTO DangKyDichVu (BenhNhan_ID, CuocHen_ID, DichVu_ID, ThoiGianDangKy, Th
 (102, 3, 3, NOW(), NOW(), 'Đã thanh toán'), 
 (103, 4, 4, NOW(), NOW(), 'Chưa thanh toán'),
 (104, 5, 5, NOW(), NOW(), 'Đã thanh toán');
+
+-- add 
+use quanlibenhvien;
+INSERT INTO BenhNhan (ID, HoTen, GioiTinh, NgaySinh, DiaChi, SoDienThoai, BaoHiemYTe, NgayHetHanBHYT) VALUES
+(105, 'Nguyễn Thị Lan', 'Nữ', '1995-01-01', 'HCM', '0321584723', '0983456712', '2027-01-01'),
+(106, 'Vũ Minh Tài', 'Nam', '1996-01-01', 'HCM', '0327483921', '0192837461', '2027-01-01'),
+(107, 'Phan Ngọc Duy', 'Nam', '1997-01-01', 'HCM', '0329301827', '0283475619', '2027-01-01'),
+(108, 'Trần Thanh Hương', 'Nữ', '1998-01-01', 'HCM', '0325738291', '0374615287', '2027-01-01'),
+(109, 'Lê Thiên Hà', 'Nam', '1999-01-01', 'HCM', '0328473746', '0465729387', '2027-01-01'),
+(110, 'Nguyễn Thu Lan', 'Nữ', '2000-01-01', 'HCM', '0329401827', '0485732910', '2027-01-01'),
+(111, 'Trần Phú Cường', 'Nam', '2001-01-01', 'HCM', '0328471936', '0374890291', '2027-01-01'),
+(112, 'Lý Hoàng Long', 'Nam', '2002-01-01', 'HCM', '0325738290', '0487384921', '2027-01-01'),
+(113, 'Nguyễn Kim Phương', 'Nữ', '2003-01-01', 'HCM', '0326402910', '0487293847', '2027-01-01'),
+(114, 'Lê Thị Quỳnh', 'Nữ', '2004-01-01', 'HCM', '0327382920', '0483648292', '2027-01-01');
+
+
+INSERT INTO NguoiThan (BenhNhan_ID, HoTen, QuanHe, SoDienThoai) VALUES
+(105, 'Nguyễn Văn Hùng', 'Chồng', '0328491736'),
+(106, 'Vũ Minh Hương', 'Vợ', '0327401920'),
+(107, 'Phan Kim Lan', 'Mẹ', '0325738192'),
+(108, 'Trần Minh Khoa', 'Bố', '0324832910'),
+(109, 'Lê Thiên Kim', 'Con', '0324918293'),
+(110, 'Nguyễn Văn Duy', 'Chồng', '0328402931'),
+(111, 'Trần Thi Thảo', 'Vợ', '0329471827'),
+(112, 'Lý Thi Lan', 'Mẹ', '0327401921'),
+(113, 'Nguyễn Thị Lan', 'Chị', '0327491823'),
+(114, 'Lê Minh Tuấn', 'Con', '0325408293');
+
+INSERT INTO CuocHen (ID, NgayGio, TinhTrang, DiaChi, BacSi_ID) VALUES
+(6, DATE_ADD(NOW(), INTERVAL 6 HOUR), 'Đang chờ', 'P.102', 'BS00001'),
+(7, DATE_ADD(NOW(), INTERVAL 7 HOUR), 'Đang chờ', 'P.103', 'BS00001'),
+(8, DATE_ADD(NOW(), INTERVAL 8 HOUR), 'Đang chờ', 'P.104', 'BS00001'),
+(9, DATE_ADD(NOW(), INTERVAL 9 HOUR), 'Đang chờ', 'P.105', 'BS00001'),
+(10, DATE_ADD(NOW(), INTERVAL 10 HOUR), 'Đang chờ', 'P.106', 'BS00001'),
+(11, DATE_ADD(NOW(), INTERVAL 11 HOUR), 'Đang chờ', 'P.107', 'BS00001'),
+(12, DATE_ADD(NOW(), INTERVAL 12 HOUR), 'Đang chờ', 'P.108', 'BS00001'),
+(13, DATE_ADD(NOW(), INTERVAL 13 HOUR), 'Đang chờ', 'P.109', 'BS00001'),
+(14, DATE_ADD(NOW(), INTERVAL 14 HOUR), 'Đang chờ', 'P.110', 'BS00001'),
+(15, DATE_ADD(NOW(), INTERVAL 15 HOUR), 'Đang chờ', 'P.111', 'BS00001');
+
+
+INSERT INTO DangKyDichVu (BenhNhan_ID, CuocHen_ID, DichVu_ID, ThoiGianDangKy, ThoiGianSuDung, TrangThaiThanhToan) VALUES
+(105, 6, 1, NOW(), NOW(), 'Đã thanh toán'),
+(106, 7, 2, NOW(), NOW(), 'Chưa thanh toán'),
+(107, 8, 3, NOW(), NOW(), 'Đã thanh toán'),
+(108, 9, 4, NOW(), NOW(), 'Chưa thanh toán'),
+(109, 10, 5, NOW(), NOW(), 'Đã thanh toán'),
+(110, 11, 1, NOW(), NOW(), 'Chưa thanh toán'),
+(111, 12, 2, NOW(), NOW(), 'Đã thanh toán'),
+(112, 13, 3, NOW(), NOW(), 'Chưa thanh toán'),
+(113, 14, 4, NOW(), NOW(), 'Đã thanh toán'),
+(114, 15, 5, NOW(), NOW(), 'Chưa thanh toán');
+
+
+
+INSERT INTO CuocHen (ID, NgayGio, TinhTrang, DiaChi, BacSi_ID) VALUES
+(16, DATE_ADD(NOW(), INTERVAL 13 HOUR), 'Đang chờ', 'P.109', 'BS00001'),
+(17, DATE_ADD(NOW(), INTERVAL 14 HOUR), 'Đang chờ', 'P.110', 'BS00001'),
+(18, DATE_ADD(NOW(), INTERVAL 14 HOUR), 'Đang chờ', 'P.110', 'BS00001'),
+(19, DATE_ADD(NOW(), INTERVAL 14 HOUR), 'Đang chờ', 'P.110', 'BS00001'),
+(20, DATE_ADD(NOW(), INTERVAL 15 HOUR), 'Đang chờ', 'P.111', 'BS00001');
+
+INSERT INTO DangKyDichVu (BenhNhan_ID, CuocHen_ID, DichVu_ID, ThoiGianDangKy, ThoiGianSuDung, TrangThaiThanhToan) VALUES
+(112, 16, 3, NOW(), NOW(), 'Chưa thanh toán'),
+(113, 17, 4, NOW(), NOW(), 'Đã thanh toán'),
+(112, 19, 3, NOW(), NOW(), 'Chưa thanh toán'),
+(113, 20, 4, NOW(), NOW(), 'Đã thanh toán'),
+(112, 18, 5, NOW(), NOW(), 'Chưa thanh toán');
