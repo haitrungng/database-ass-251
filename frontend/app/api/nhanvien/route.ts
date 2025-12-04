@@ -17,6 +17,7 @@ export const NhanVienSchema = z.object({
   SoDienThoai: z.string(),
   BenhVien_ID: z.number(),
   Khoa_ID: z.number(),
+  TenKhoa: z.string(), // <- thêm tên khoa
 });
 
 export type NhanVien = z.infer<typeof NhanVienSchema>;
@@ -45,18 +46,19 @@ export const UpdateNhanVienSchema = z.object({
 });
 export type UpdateNhanVienInput = z.infer<typeof UpdateNhanVienSchema>;
 
-// Dữ liệu thô từ MySQL
+// Dữ liệu thô từ MySQL (JOIN với Khoa)
 export interface DbNhanVien extends RowDataPacket {
   ID: string;
   CCCD: string;
   Ho: string;
   Dem: string | null;
   Ten: string;
-  NgaySinh: Date; // <- MySQL DATE
+  NgaySinh: Date; // MySQL DATE
   GioiTinh: 'Nam' | 'Nữ';
   SoDienThoai: string;
   BenhVien_ID: number;
   Khoa_ID: number;
+  TenKhoa: string;
 }
 
 // -----------------------------
@@ -72,21 +74,32 @@ function formatDate(d: Date): string {
 }
 
 // -----------------------------
-// GET: LẤY DS NHÂN VIÊN
+// GET: LẤY DS NHÂN VIÊN (+ TÊN KHOA)
 // -----------------------------
 export async function GET() {
   try {
     const [rows] = await pool.query<DbNhanVien[]>(
       `
       SELECT 
-        ID, CCCD, Ho, Dem, Ten, NgaySinh, GioiTinh, 
-        SoDienThoai, BenhVien_ID, Khoa_ID
-      FROM nhanvien
-      ORDER BY ID ASC;
+        nv.ID,
+        nv.CCCD,
+        nv.Ho,
+        nv.Dem,
+        nv.Ten,
+        nv.NgaySinh,
+        nv.GioiTinh,
+        nv.SoDienThoai,
+        nv.BenhVien_ID,
+        nv.Khoa_ID,
+        k.TenKhoa
+      FROM NhanVien nv
+      JOIN Khoa k 
+        ON k.ID = nv.Khoa_ID
+       AND k.BenhVien_ID = nv.BenhVien_ID
+      ORDER BY nv.ID ASC;
       `
     );
 
-    // Chuyển Date -> string, null -> nullable field
     const normalized: NhanVien[] = rows.map((row) => ({
       ID: row.ID,
       CCCD: row.CCCD,
@@ -98,9 +111,9 @@ export async function GET() {
       SoDienThoai: row.SoDienThoai,
       BenhVien_ID: row.BenhVien_ID,
       Khoa_ID: row.Khoa_ID,
+      TenKhoa: row.TenKhoa,
     }));
 
-    // Validate cuối cùng bằng Zod
     const parsed = z.array(NhanVienSchema).parse(normalized);
 
     return NextResponse.json({
@@ -120,6 +133,7 @@ export async function POST(req: NextRequest) {
   try {
     const json = await req.json();
     const body = InsertNhanVienSchema.parse(json);
+    console.log('body', body);
 
     const conn = await getConnection();
 
@@ -128,8 +142,8 @@ export async function POST(req: NextRequest) {
         body.ID,
         body.CCCD,
         body.Ho,
-        body.Dem ?? '',
         body.Ten,
+        body.Dem ?? '',
         body.NgaySinh,
         body.GioiTinh,
         body.SoDienThoai,

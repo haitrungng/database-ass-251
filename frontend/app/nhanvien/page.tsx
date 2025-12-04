@@ -35,9 +35,11 @@ import {
   TableBody,
   TableCell,
 } from '@/components/ui/table';
+import Link from 'next/link';
+import { transformFormField } from '@/lib/utils';
 
 // -----------------------------
-// ZOD SCHEMA
+// ZOD SCHEMA - CREATE
 // -----------------------------
 const NhanVienSchema = z.object({
   ID: z.string().min(1, { message: 'ID không được để trống' }),
@@ -49,19 +51,57 @@ const NhanVienSchema = z.object({
   GioiTinh: z.enum(['Nam', 'Nữ']),
   SoDienThoai: z.string().min(8, { message: 'SĐT không hợp lệ' }),
   BenhVien_ID: z.string().min(1),
-  Khoa_ID: z.string().min(1),
+  Khoa_ID: z.string().min(1, { message: 'Khoa_ID không được để trống' }),
 });
 
 type NhanVienType = z.infer<typeof NhanVienSchema>;
 
+type NhanVienOutput = {
+  ID: string;
+  CCCD: string;
+  Ho: string;
+  Dem?: string;
+  Ten: string;
+  NgaySinh: string;
+  GioiTinh: 'Nam' | 'Nữ';
+  SoDienThoai: string;
+  BenhVien_ID: number; // <- số, đúng với backend
+  Khoa_ID: number; // <- số, đúng với backend
+  TenKhoa: string;
+};
+
+// -----------------------------
+// ZOD SCHEMA - EDIT (UPDATE)
+// -----------------------------
+const EditNhanVienSchema = z.object({
+  ID: z.string(),
+  SoDienThoai: z.string().length(10, { message: 'SĐT không hợp lệ' }),
+  BenhVien_ID: z
+    .string()
+    .min(1, { message: 'BenhVien_ID không được để trống' }),
+  Khoa_ID: z.string().min(1, { message: 'Khoa_ID không được để trống' }),
+});
+
+type EditNhanVienType = z.infer<typeof EditNhanVienSchema>;
+
+type ApiResponse<T> = {
+  success: boolean;
+  data?: T[];
+  message?: string;
+};
+
 export default function NhanVienPage() {
-  const [data, setData] = useState<NhanVienType[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [editData, setEditData] = useState<NhanVienType | null>(null);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [data, setData] = useState<NhanVienOutput[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [editError, setEditError] = useState<string | null>(null);
+
+  const [selectedNhanVien, setSelectedNhanVien] =
+    useState<NhanVienOutput | null>(null);
 
   // -----------------------------
-  // FORM KHỞI TẠO
+  // FORM THÊM
   // -----------------------------
   const form = useForm<NhanVienType>({
     resolver: zodResolver(NhanVienSchema),
@@ -80,78 +120,122 @@ export default function NhanVienPage() {
   });
 
   // -----------------------------
+  // FORM SỬA (chỉ 4 field)
+  // -----------------------------
+  const editForm = useForm<EditNhanVienType>({
+    resolver: zodResolver(EditNhanVienSchema),
+    defaultValues: {
+      ID: '',
+      SoDienThoai: '',
+      BenhVien_ID: '',
+      Khoa_ID: '',
+    },
+  });
+
+  // -----------------------------
   // LOAD LIST
   // -----------------------------
-  const loadData = async () => {
+  const loadData = async (): Promise<void> => {
     setLoading(true);
-    const res = await fetch('/api/nhanvien');
-    const json = await res.json();
+    setCreateError(null);
+    setEditError(null);
 
-    if (!json.success) {
-      setErrorMsg(json.message);
-    } else {
-      setData(json.data);
+    try {
+      const res = await fetch('/api/nhanvien');
+      const json = (await res.json()) as ApiResponse<NhanVienOutput>;
+
+      if (!json.success || !json.data) {
+        setCreateError(json.message ?? 'Không tải được danh sách nhân viên');
+        setData([]);
+      } else {
+        setData(json.data);
+      }
+    } catch (err) {
+      const e = err as Error;
+      setCreateError(e.message);
+      setData([]);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
-    loadData();
+    void loadData();
   }, []);
 
   // -----------------------------
   // SUBMIT (CREATE)
   // -----------------------------
   const onSubmit: SubmitHandler<NhanVienType> = async (values) => {
-    setErrorMsg(null);
+    setCreateError(null);
 
-    const res = await fetch('/api/nhanvien', {
-      method: 'POST',
-      body: JSON.stringify(values),
-    });
-    const json = await res.json();
+    try {
+      const res = await fetch('/api/nhanvien', {
+        method: 'POST',
+        body: JSON.stringify(values),
+      });
+      const json = (await res.json()) as ApiResponse<never>;
 
-    if (!json.success) {
-      setErrorMsg(json.message);
-    } else {
-      form.reset();
-      loadData();
+      if (!json.success) {
+        setCreateError(json.message ?? 'Thêm nhân viên thất bại');
+      } else {
+        form.reset();
+        void loadData();
+      }
+    } catch (err) {
+      const e = err as Error;
+      setCreateError(e.message);
     }
   };
 
   // -----------------------------
-  // UPDATE
+  // SUBMIT (EDIT)
   // -----------------------------
-  const handleEditSubmit = async () => {
-    if (!editData) return;
+  const onEditSubmit: SubmitHandler<EditNhanVienType> = async (values) => {
+    setEditError(null);
 
-    const res = await fetch('/api/nhanvien', {
-      method: 'PUT',
-      body: JSON.stringify(editData),
-    });
+    try {
+      const res = await fetch('/api/nhanvien', {
+        method: 'PUT',
+        body: JSON.stringify(values),
+      });
+      const json = (await res.json()) as ApiResponse<never>;
 
-    const json = await res.json();
-    if (!json.success) {
-      setErrorMsg(json.message);
-    } else {
-      setEditData(null);
-      loadData();
+      if (!json.success) {
+        setEditError(json.message ?? 'Cập nhật thất bại');
+      } else {
+        setSelectedNhanVien(null);
+        void loadData();
+      }
+    } catch (err) {
+      const e = err as Error;
+      setEditError(e.message);
     }
   };
 
   // -----------------------------
   // DELETE
   // -----------------------------
-  const handleDelete = async (id: string) => {
-    if (!confirm('Bạn chắc chắn muốn xóa?')) return;
+  const handleDelete = async (id: string): Promise<void> => {
+    if (!window.confirm('Bạn chắc chắn muốn xóa?')) return;
 
-    const res = await fetch(`/api/nhanvien?id=${id}`, { method: 'DELETE' });
-    const json = await res.json();
+    setCreateError(null);
+    setEditError(null);
 
-    if (!json.success) {
-      setErrorMsg(json.message);
-    } else {
-      loadData();
+    try {
+      const res = await fetch(`/api/nhanvien?id=${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+      });
+      const json = (await res.json()) as ApiResponse<never>;
+
+      if (!json.success) {
+        setCreateError(json.message ?? 'Xóa nhân viên thất bại');
+      } else {
+        void loadData();
+      }
+    } catch (err) {
+      const e = err as Error;
+      setCreateError(e.message);
     }
   };
 
@@ -166,14 +250,15 @@ export default function NhanVienPage() {
         </CardHeader>
 
         <CardContent>
-          {errorMsg && <p className='text-red-500 text-sm pb-2'>{errorMsg}</p>}
+          {createError && (
+            <p className='text-red-500 text-sm pb-2'>{createError}</p>
+          )}
 
           <Form {...form}>
             <form
               onSubmit={form.handleSubmit(onSubmit)}
               className='grid grid-cols-1 md:grid-cols-2 gap-4'
             >
-              {/* CÁC FIELD */}
               {(
                 Object.keys(NhanVienSchema.shape) as Array<keyof NhanVienType>
               ).map((field) => (
@@ -183,7 +268,7 @@ export default function NhanVienPage() {
                   name={field}
                   render={({ field: f }) => (
                     <FormItem>
-                      <FormLabel>{field}</FormLabel>
+                      <FormLabel>{transformFormField(field)}</FormLabel>
                       <FormControl>
                         <Input
                           type={field === 'NgaySinh' ? 'date' : 'text'}
@@ -234,16 +319,29 @@ export default function NhanVienPage() {
                     <TableCell>
                       {nv.Ho} {nv.Dem} {nv.Ten}
                     </TableCell>
-                    <TableCell>{nv.Khoa_ID}</TableCell>
+                    <TableCell>{nv.TenKhoa}</TableCell>
                     <TableCell>{nv.SoDienThoai}</TableCell>
                     <TableCell className='space-x-2'>
-                      <Dialog>
+                      <Dialog
+                        open={selectedNhanVien?.ID === nv.ID}
+                        onOpenChange={(open) => {
+                          if (open) {
+                            setSelectedNhanVien(nv);
+                            editForm.reset({
+                              ID: nv.ID,
+                              SoDienThoai: nv.SoDienThoai,
+                              BenhVien_ID: String(nv.BenhVien_ID),
+                              Khoa_ID: String(nv.Khoa_ID),
+                            });
+                            setEditError(null);
+                          } else {
+                            setSelectedNhanVien(null);
+                            setEditError(null);
+                          }
+                        }}
+                      >
                         <DialogTrigger asChild>
-                          <Button
-                            variant='outline'
-                            size='sm'
-                            onClick={() => setEditData(nv)}
-                          >
+                          <Button variant='outline' size='sm'>
                             Sửa
                           </Button>
                         </DialogTrigger>
@@ -253,50 +351,150 @@ export default function NhanVienPage() {
                             <DialogTitle>Sửa nhân viên</DialogTitle>
                           </DialogHeader>
 
-                          {editData && (
-                            <div className='grid grid-cols-1 md:grid-cols-2 gap-4 py-4'>
-                              {(
-                                Object.keys(NhanVienSchema.shape) as Array<
-                                  keyof NhanVienType
-                                >
-                              ).map((field) => (
-                                <div
-                                  key={field}
-                                  className='flex flex-col gap-1'
-                                >
-                                  <label className='text-sm font-medium'>
-                                    {field}
-                                  </label>
+                          {selectedNhanVien && (
+                            <div className='space-y-4'>
+                              {/* THÔNG TIN CƠ BẢN (READONLY) */}
+                              <div className='grid grid-cols-1 md:grid-cols-2 gap-3'>
+                                <div>
+                                  <div className='text-xs text-muted-foreground'>
+                                    ID
+                                  </div>
+                                  <Input value={selectedNhanVien.ID} disabled />
+                                </div>
+                                <div>
+                                  <div className='text-xs text-muted-foreground'>
+                                    CCCD
+                                  </div>
                                   <Input
-                                    type={
-                                      field === 'NgaySinh' ? 'date' : 'text'
-                                    }
-                                    value={editData[field] || ''}
-                                    onChange={(e) =>
-                                      setEditData({
-                                        ...editData,
-                                        [field]: e.target.value,
-                                      })
-                                    }
+                                    value={selectedNhanVien.CCCD}
+                                    disabled
                                   />
                                 </div>
-                              ))}
+                                <div>
+                                  <div className='text-xs text-muted-foreground'>
+                                    Họ tên
+                                  </div>
+                                  <Input
+                                    value={`${selectedNhanVien.Ho} ${
+                                      selectedNhanVien.Dem ?? ''
+                                    } ${selectedNhanVien.Ten}`}
+                                    disabled
+                                  />
+                                </div>
+                                <div>
+                                  <div className='text-xs text-muted-foreground'>
+                                    Ngày sinh
+                                  </div>
+                                  <Input
+                                    value={selectedNhanVien.NgaySinh}
+                                    disabled
+                                  />
+                                </div>
+                                <div>
+                                  <div className='text-xs text-muted-foreground'>
+                                    Giới tính
+                                  </div>
+                                  <Input
+                                    value={selectedNhanVien.GioiTinh}
+                                    disabled
+                                  />
+                                </div>
+                                <div>
+                                  <div className='text-xs text-muted-foreground'>
+                                    Khoa hiện tại
+                                  </div>
+                                  <Input
+                                    value={selectedNhanVien.TenKhoa}
+                                    disabled
+                                  />
+                                </div>
+                              </div>
+
+                              {/* FORM EDIT 3 FIELD */}
+                              {editError && (
+                                <p className='text-sm text-red-500'>
+                                  {editError}
+                                </p>
+                              )}
+
+                              <Form {...editForm}>
+                                <form
+                                  onSubmit={editForm.handleSubmit(onEditSubmit)}
+                                  className='grid grid-cols-1 md:grid-cols-2 gap-3'
+                                >
+                                  <FormField
+                                    control={editForm.control}
+                                    name='SoDienThoai'
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormLabel>Số điện thoại</FormLabel>
+                                        <FormControl>
+                                          <Input {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+
+                                  <FormField
+                                    control={editForm.control}
+                                    name='BenhVien_ID'
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormLabel>BenhVien_ID</FormLabel>
+                                        <FormControl>
+                                          <Input {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+
+                                  <FormField
+                                    control={editForm.control}
+                                    name='Khoa_ID'
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormLabel>Khoa_ID</FormLabel>
+                                        <FormControl>
+                                          <Input {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+
+                                  {/* Ẩn ID nhưng vẫn submit */}
+                                  <input
+                                    type='hidden'
+                                    {...editForm.register('ID')}
+                                  />
+
+                                  <DialogFooter className='col-span-full'>
+                                    <Button type='submit'>Lưu</Button>
+                                  </DialogFooter>
+                                </form>
+                              </Form>
                             </div>
                           )}
-
-                          <DialogFooter>
-                            <Button onClick={handleEditSubmit}>Lưu</Button>
-                          </DialogFooter>
                         </DialogContent>
                       </Dialog>
 
                       <Button
                         variant='destructive'
                         size='sm'
-                        onClick={() => handleDelete(nv.ID)}
+                        onClick={() => void handleDelete(nv.ID)}
                       >
                         Xóa
                       </Button>
+
+                      {nv.ID.includes('BS') && (
+                        <Button variant='secondary' size='sm'>
+                          <Link href={`/bacsi/${nv.ID}/cuochen`}>
+                            Xem lịch hẹn
+                          </Link>
+                        </Button>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}

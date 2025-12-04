@@ -1,4 +1,12 @@
-import { Calendar, Home, Inbox, Search, Settings } from 'lucide-react';
+import {
+  Calendar,
+  Home,
+  Inbox,
+  UserCircle,
+  Search,
+  Settings,
+  ListMinusIcon,
+} from 'lucide-react';
 
 import {
   Sidebar,
@@ -14,29 +22,19 @@ import {
 // Menu items.
 const items = [
   {
-    title: 'Home',
-    url: '#',
+    title: 'Trang chủ',
+    url: '/',
     icon: Home,
   },
   {
-    title: 'Inbox',
-    url: '#',
-    icon: Inbox,
+    title: 'Nhân viên',
+    url: '/nhanvien',
+    icon: UserCircle,
   },
   {
-    title: 'Schedule',
-    url: '/schedule',
-    icon: Calendar,
-  },
-  {
-    title: 'Search',
-    url: '#',
-    icon: Search,
-  },
-  {
-    title: 'Settings',
-    url: '#',
-    icon: Settings,
+    title: 'Dịch vụ bệnh nhân',
+    url: '/thongke/dichvu-benhnhan',
+    icon: ListMinusIcon,
   },
 ];
 
