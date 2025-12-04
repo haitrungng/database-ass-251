@@ -11,10 +11,11 @@ DB_NAME=quanlibenhvien
 
 ```bash
 # for the 1st time running after pulling code
+cd frontend
 npm i
 npm run dev
 
 # for the next time, only need
+cd frontend
 npm run dev
-``
 ```
