@@ -176,7 +176,6 @@ export default function HospitalDashboardPage() {
                     <TableHead>Giờ</TableHead>
                     <TableHead>Bệnh nhân</TableHead>
                     <TableHead>Bác sĩ</TableHead>
-                    <TableHead>Phòng</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -185,7 +184,6 @@ export default function HospitalDashboardPage() {
                       <TableCell className='font-medium'>{item.time}</TableCell>
                       <TableCell>{item.patient}</TableCell>
                       <TableCell>{item.doctor}</TableCell>
-                      <TableCell>{item.room}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -193,7 +191,7 @@ export default function HospitalDashboardPage() {
             </div>
 
             <p className='mt-3 text-xs text-muted-foreground'>
-              * Dữ liệu minh họa. Có thể thay bằng dữ liệu thật từ API
+              * Dữ liệu minh họa.
               <code className='mx-1 rounded bg-muted px-1 py-0.5'>
                 /api/bacsi/[id]/cuochen
               </code>

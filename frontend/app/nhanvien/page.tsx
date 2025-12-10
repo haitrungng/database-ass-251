@@ -37,6 +37,7 @@ import {
 } from '@/components/ui/table';
 import Link from 'next/link';
 import { transformFormField } from '@/lib/utils';
+import { toast } from 'sonner';
 
 // -----------------------------
 // ZOD SCHEMA - CREATE
@@ -174,6 +175,7 @@ export default function NhanVienPage() {
         method: 'POST',
         body: JSON.stringify(values),
       });
+      console.log('Submitted values:', values);
       const json = (await res.json()) as ApiResponse<never>;
 
       if (!json.success) {
@@ -202,8 +204,10 @@ export default function NhanVienPage() {
       const json = (await res.json()) as ApiResponse<never>;
 
       if (!json.success) {
+        toast.error(json.message ?? 'Cập nhật thất bại');
         setEditError(json.message ?? 'Cập nhật thất bại');
       } else {
+        toast.success('Cập nhật thành công nhân viên ' + values.ID);
         setSelectedNhanVien(null);
         void loadData();
       }
@@ -217,8 +221,6 @@ export default function NhanVienPage() {
   // DELETE
   // -----------------------------
   const handleDelete = async (id: string): Promise<void> => {
-    if (!window.confirm('Bạn chắc chắn muốn xóa?')) return;
-
     setCreateError(null);
     setEditError(null);
 
@@ -229,13 +231,14 @@ export default function NhanVienPage() {
       const json = (await res.json()) as ApiResponse<never>;
 
       if (!json.success) {
-        setCreateError(json.message ?? 'Xóa nhân viên thất bại');
+        toast.error(json.message ?? 'Xóa thất bại');
       } else {
+        toast.success('Xóa thành công nhân viên ' + id);
         void loadData();
       }
     } catch (err) {
       const e = err as Error;
-      setCreateError(e.message);
+      toast.error(e.message);
     }
   };
 

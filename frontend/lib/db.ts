@@ -19,6 +19,7 @@ const dbConfig: PoolOptions = {
   password: process.env.DB_PASS ?? '',
   database: process.env.DB_NAME ?? '',
   waitForConnections: true,
+  timezone: 'Z',
   connectionLimit: 10,
   queueLimit: 0,
 };

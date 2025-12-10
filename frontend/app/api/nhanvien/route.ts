@@ -150,6 +150,7 @@ export async function POST(req: NextRequest) {
         body.BenhVien_ID,
         body.Khoa_ID,
       ]);
+      console.log('Inserted NhanVien with ID:', body.NgaySinh);
     } catch (err) {
       const e = err as MysqlError;
       return error(e.sqlMessage ?? e.message);

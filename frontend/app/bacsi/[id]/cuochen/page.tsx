@@ -175,10 +175,6 @@ export default function BacSiCuocHenPage() {
                   </FormItem>
                 )}
               />
-
-              <Button type='submit' className='w-full md:w-auto'>
-                Áp dụng
-              </Button>
             </form>
           </Form>
         </CardContent>
