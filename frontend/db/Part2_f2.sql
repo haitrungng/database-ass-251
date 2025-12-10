@@ -149,11 +149,17 @@ BEGIN
         RAISERROR (N'Lỗi: Không thể xóa KTV vì đang thực hiện xét nghiệm chưa có kết quả.', 16, 1);
         RETURN;
     END
-
     -- Xóa các bảng con trước (NhanVien)
     BEGIN TRANSACTION
         BEGIN TRY
             -- Xóa vai trò (nếu có)
+            DELETE FROM ThucHien WHERE NhanVien_ID = @ID;         -- Xóa lịch sử thực hiện
+            -- 2. Xóa kỹ năng (Bắt buộc xóa trước)
+            DELETE FROM DonKhamBenh WHERE CuocHen_ID IN (SELECT ID FROM CuocHen WHERE BacSi_ID = @ID);
+            DELETE FROM DangKyDichVu WHERE CuocHen_ID IN (SELECT ID FROM CuocHen WHERE BacSi_ID = @ID);
+            DELETE FROM CuocHen WHERE BacSi_ID = @ID;
+            DELETE FROM KyThuatVien_KiNang WHERE NhanVien_ID = @ID;
+
             DELETE FROM BacSi WHERE NhanVien_ID = @ID;
             DELETE FROM YTa WHERE NhanVien_ID = @ID;
             DELETE FROM KyThuatVien WHERE NhanVien_ID = @ID;
@@ -172,6 +178,61 @@ BEGIN
         END CATCH
 END
 GO
+
+--2.1.4 Thủ tục DELETE Cuochen
+USE Quanlibenhvien
+GO
+
+CREATE OR ALTER PROCEDURE sp_DeleteCuocHen
+    @CuocHenID INT
+AS
+BEGIN
+    -- 1. Kiểm tra cuộc hẹn có tồn tại không
+    IF NOT EXISTS (SELECT 1 FROM CuocHen WHERE ID = @CuocHenID)
+    BEGIN
+        RAISERROR(N'Lỗi: Mã cuộc hẹn %d không tồn tại.', 16, 1, @CuocHenID);
+        RETURN;
+    END
+
+    -- 2. KIỂM TRA: Đã có Hồ sơ khám bệnh chưa?
+    -- ( Nếu đã có đơn khám -> Tức là Bác sĩ đã khám -> Không được xóa lịch sử)
+    IF EXISTS (SELECT 1 FROM DonKhamBenh WHERE CuocHen_ID = @CuocHenID)
+    BEGIN
+        RAISERROR(N'Lỗi: Cuộc hẹn này đã tiến hành khám và có hồ sơ bệnh án. Không thể xóa!', 16, 1);
+        RETURN;
+    END
+
+    -- 3. KIỂM TRA: Đã thanh toán tiền chưa?
+    -- ( Nếu bệnh nhân đã đóng tiền dịch vụ liên quan cuộc hẹn này -> Không được xóa)
+    IF EXISTS (
+        SELECT 1 FROM DangKyDichVu 
+        WHERE CuocHen_ID = @CuocHenID 
+          AND TrangThaiThanhToan = N'Đã thanh toán'
+    )
+    BEGIN
+        RAISERROR(N'Lỗi: Cuộc hẹn này có dịch vụ ĐÃ THANH TOÁN. Không thể xóa chứng từ tài chính!', 16, 1);
+        RETURN;
+    END
+
+    BEGIN TRANSACTION
+        BEGIN TRY
+            -- Xóa các dịch vụ đăng ký 
+            DELETE FROM DangKyDichVu WHERE CuocHen_ID = @CuocHenID;
+
+            -- Xóa cuộc hẹn
+            DELETE FROM CuocHen WHERE ID = @CuocHenID;
+
+            COMMIT TRANSACTION;
+            PRINT N'Xóa cuộc hẹn thành công!';
+        END TRY
+        BEGIN CATCH
+            ROLLBACK TRANSACTION;
+            DECLARE @ErrorMessage NVARCHAR(4000) = ERROR_MESSAGE();
+            RAISERROR(@ErrorMessage, 16, 1);
+        END CATCH
+END
+GO
+
 
 -- 2.2 TRIGGER
 
@@ -327,3 +388,5 @@ BEGIN
     RETURN 0;
 END
 GO
+
+
