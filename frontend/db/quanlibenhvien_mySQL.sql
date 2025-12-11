@@ -389,23 +389,7 @@ INSERT INTO QuanLi (ID, QL_ID) VALUES
 ('YT00010', 'BS00004'),
 ('VP00007', 'BS00004'),
 ('YT00005', 'BS00005'),
-('VP00008', 'BS00005'),
-('YT00006', 'BS00006'),
-('KT00009', 'BS00006'),
-('KT00010', 'BS00006'),
-('VP00009', 'BS00006'),
-('KT00004', 'BS00007'),
-('KT00005', 'BS00007'),
-('KT00006', 'BS00007'),
-('KT00001', 'BS00008'),
-('KT00002', 'BS00008'),
-('KT00003', 'BS00008'),
-('VP00001', 'BS00009'),
-('VP00002', 'BS00009'),
-('VP00003', 'BS00009'),
-('VP00010', 'BS00009'),
-('KT00007', 'BS00010'),
-('KT00008', 'BS00010');
+('BS00005', 'VP00008');
 
 INSERT INTO BenhNhan (ID, HoTen, GioiTinh, NgaySinh, DiaChi, SoDienThoai, BaoHiemYTe, NgayHetHanBHYT) VALUES
 (100, 'Nguyễn Văn An', 'Nam', '1990-01-01', 'HCM', '0321594872', '0981273645', '2026-12-01'),
@@ -445,9 +429,9 @@ INSERT INTO XetNghiem (ID, LoaiXetNghiem_ID, DonKhamBenh_ID, NgayThucHien, KetQu
 INSERT INTO ThucHien (XetNghiem_ID, NhanVien_ID) VALUES
 (1, 'KT00001'), 
 (2, 'KT00002'), 
-(3, 'KT00004'), 
-(4, 'KT00005'), 
-(5, 'KT00007');
+(3, 'KT00001'), 
+(4, 'KT00002'), 
+(5, 'KT00002');
 
 INSERT INTO DonKhamBenhVaThuoc (DonKhamBenh_ID, Thuoc_ID, SoLuong, CachDung) VALUES
 (1, 1, 10, 'Sáng 1 chiều 1'),

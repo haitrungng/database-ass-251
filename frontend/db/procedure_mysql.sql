@@ -109,56 +109,111 @@ END $$
 
 
 -- 2.1.3 Thủ tục DELETE Nhân viên
+DROP PROCEDURE IF EXISTS sp_DeleteNhanVien;
+DELIMITER $$
+
+
+
 DROP PROCEDURE IF EXISTS sp_DeleteNhanVien $$
-CREATE PROCEDURE sp_DeleteNhanVien (
-    IN p_ID CHAR(7)
-)
+CREATE PROCEDURE sp_DeleteNhanVien(IN p_ID CHAR(7))
 BEGIN
+    -- Kiểm tra tồn tại
     IF NOT EXISTS (SELECT 1 FROM NhanVien WHERE ID = p_ID) THEN
-        SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Lỗi: Nhân viên không tồn tại.';
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Lỗi: Nhân viên không tồn tại.';
     END IF;
 
-    -- 1. Kiểm tra có đang là quản lý người khác không
+    -- Kiểm tra có đang là quản lý
     IF EXISTS (SELECT 1 FROM QuanLi WHERE QL_ID = p_ID) THEN
-        SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Lỗi: Không thể xóa vì nhân viên này đang quản lý nhân viên khác.';
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Lỗi: Không thể xóa vì nhân viên này đang quản lý nhân viên khác.';
     END IF;
 
-    -- 2. Kiểm tra Bác sĩ có cuộc hẹn sắp tới, chưa hoàn thành
+    -- Bác sĩ có cuộc hẹn sắp tới, chưa hoàn thành
     IF EXISTS (
-        SELECT 1
-        FROM CuocHen
-        WHERE BacSi_ID = p_ID
+        SELECT 1 
+        FROM CuocHen 
+        WHERE BacSi_ID = p_ID 
           AND NgayGio >= NOW()
           AND TinhTrang NOT IN ('Hoàn thành', 'Đã hủy')
     ) THEN
-        SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Lỗi: Không thể xóa bác sĩ vì còn lịch hẹn chưa hoàn thành.';
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Lỗi: Không thể xóa bác sĩ vì còn lịch hẹn chưa hoàn thành.';
     END IF;
 
-    -- 3. Kiểm tra KTV đang thực hiện xét nghiệm chưa có kết quả
+    -- KTV đang thực hiện xét nghiệm chưa có kết quả
     IF EXISTS (
-        SELECT 1
+        SELECT 1 
         FROM ThucHien TH
-        JOIN XetNghiem XN ON TH.XetNghiem_ID = XN.ID
-        WHERE TH.NhanVien_ID = p_ID
+        INNER JOIN XetNghiem XN ON TH.XetNghiem_ID = XN.ID
+        WHERE TH.NhanVien_ID = p_ID 
           AND (XN.KetQua IS NULL OR XN.KetQua = '')
     ) THEN
-        SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Lỗi: Không thể xóa KTV vì đang thực hiện xét nghiệm chưa có kết quả.';
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Lỗi: Không thể xóa KTV vì đang thực hiện xét nghiệm chưa có kết quả.';
     END IF;
 
-    -- Xóa các bảng con trước, sau đó xóa nhân viên
+    -- Xóa các bảng con trước (NhanVien)
     START TRANSACTION;
-        DELETE FROM BacSi             WHERE NhanVien_ID = p_ID;
-        DELETE FROM YTa               WHERE NhanVien_ID = p_ID;
-        DELETE FROM KyThuatVien       WHERE NhanVien_ID = p_ID;
-        DELETE FROM NhanVienVanPhong  WHERE NhanVien_ID = p_ID;
-        DELETE FROM QuanLi            WHERE ID          = p_ID;
-        DELETE FROM NhanVien          WHERE ID          = p_ID;
+        -- Xóa lịch sử thực hiện
+        DELETE FROM ThucHien WHERE NhanVien_ID = p_ID;
+
+        -- Xóa các thông tin liên quan đến cuộc hẹn do bác sĩ này phụ trách
+        DELETE FROM DonKhamBenh 
+        WHERE CuocHen_ID IN (SELECT ID FROM CuocHen WHERE BacSi_ID = p_ID);
+
+        DELETE FROM DangKyDichVu 
+        WHERE CuocHen_ID IN (SELECT ID FROM CuocHen WHERE BacSi_ID = p_ID);
+
+        DELETE FROM CuocHen WHERE BacSi_ID = p_ID;
+
+        -- Xóa kỹ năng
+        DELETE FROM KyThuatVien_KiNang WHERE NhanVien_ID = p_ID;
+
+        -- Xóa vai trò
+        DELETE FROM BacSi WHERE NhanVien_ID = p_ID;
+        DELETE FROM YTa WHERE NhanVien_ID = p_ID;
+        DELETE FROM KyThuatVien WHERE NhanVien_ID = p_ID;
+        DELETE FROM NhanVienVanPhong WHERE NhanVien_ID = p_ID;
+        DELETE FROM QuanLi WHERE ID = p_ID;
+
+        -- Xóa nhân viên
+        DELETE FROM NhanVien WHERE ID = p_ID;
     COMMIT;
-END $$
+END$$
+DELIMITER ;
+
+
+-- 2.1.4 Thủ tục DELETE CuocHen
+DROP PROCEDURE IF EXISTS sp_DeleteCuocHen;
+DELIMITER $$
+
+CREATE PROCEDURE sp_DeleteCuocHen(IN p_CuocHenID INT)
+BEGIN
+    -- 1. Kiểm tra cuộc hẹn có tồn tại không
+    IF NOT EXISTS (SELECT 1 FROM CuocHen WHERE ID = p_CuocHenID) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Lỗi: Mã cuộc hẹn không tồn tại.';
+    END IF;
+
+    -- 2. Kiểm tra đã có Hồ sơ khám bệnh chưa
+    IF EXISTS (SELECT 1 FROM DonKhamBenh WHERE CuocHen_ID = p_CuocHenID) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Lỗi: Cuộc hẹn này đã tiến hành khám và có hồ sơ bệnh án. Không thể xóa!';
+    END IF;
+
+    -- 3. Kiểm tra đã thanh toán chưa
+    IF EXISTS (
+        SELECT 1 FROM DangKyDichVu 
+        WHERE CuocHen_ID = p_CuocHenID 
+          AND TrangThaiThanhToan = 'Đã thanh toán'
+    ) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Lỗi: Cuộc hẹn này có dịch vụ đã thanh toán. Không thể xóa!';
+    END IF;
+
+    START TRANSACTION;
+        -- Xóa các dịch vụ đăng ký
+        DELETE FROM DangKyDichVu WHERE CuocHen_ID = p_CuocHenID;
+
+        -- Xóa cuộc hẹn
+        DELETE FROM CuocHen WHERE ID = p_CuocHenID;
+    COMMIT;
+END$$
+DELIMITER ;
 
 
 /* ===========================
