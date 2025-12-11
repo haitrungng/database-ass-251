@@ -317,9 +317,10 @@ BEGIN
 END
 GO
 
--- 2.3.2 Thống kê dịch vụ theo bệnh nhân 
+-- 2.3.2 Thống kê dịch vụ theo bệnh nhân
 CREATE OR ALTER PROCEDURE sp_DichVuTheoBenhNhan
-    @MinSoLuong INT
+    @MinSoLuong INT, -- Tham số cho HAVING
+    @Nam INT         -- Tham số mới cho WHERE
 AS
 BEGIN
     SELECT 
@@ -328,7 +329,9 @@ BEGIN
         COUNT(*) AS SoLanSuDung
     FROM DangKyDichVu d
     JOIN BenhNhan bn ON bn.ID = d.BenhNhan_ID
-    GROUP BY bn.ID, bn.HoTen
+    JOIN CuocHen ch ON ch.ID = d.CuocHen_ID 
+    WHERE YEAR(ch.NgayGio) = @Nam 
+    GROUP BY bn.ID, bn.HoTen    
     HAVING COUNT(*) >= @MinSoLuong
     ORDER BY SoLanSuDung DESC;
 END
@@ -341,6 +344,11 @@ CREATE OR ALTER FUNCTION fn_TongTienThuoc(@DonKham_ID INT)
 RETURNS MONEY
 AS
 BEGIN
+    IF NOT EXISTS (SELECT 1 FROM DonKhamBenh WHERE ID = @DonKham_ID)
+    BEGIN
+        RETURN 0;
+    END
+
     DECLARE @Tong MONEY = 0;
     DECLARE @Gia MONEY;
     DECLARE @SL INT;
@@ -388,5 +396,3 @@ BEGIN
     RETURN 0;
 END
 GO
-
-
