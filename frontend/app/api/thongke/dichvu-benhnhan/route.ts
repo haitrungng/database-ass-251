@@ -22,6 +22,7 @@ interface DbServiceUsage extends RowDataPacket {
 // Query param ?min=...
 const QuerySchema = z.object({
   min: z.coerce.number().int().min(1).default(1),
+  year: z.coerce.number().int().min(1900).default(1900),
 });
 
 function error(message: string, status = 400) {
@@ -32,13 +33,17 @@ export async function GET(req: NextRequest) {
   try {
     const searchParams = req.nextUrl.searchParams;
     const minRaw: string | null = searchParams.get('min');
+    const yearRaw: string | null = searchParams.get('year');
 
-    const { min } = QuerySchema.parse({ min: minRaw ?? '1' });
+    const { min, year } = QuerySchema.parse({
+      min: minRaw ?? '1',
+      year: yearRaw ?? '1900',
+    });
 
     // Gọi SP
     const [rowsRaw] = await pool.query<RowDataPacket[][] | RowDataPacket[]>(
-      'CALL sp_DichVuTheoBenhNhan(?)',
-      [min]
+      'CALL sp_DichVuTheoBenhNhan(?, ?)',
+      [min, year]
     );
 
     let dbRows: DbServiceUsage[] = [];

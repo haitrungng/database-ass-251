@@ -42,6 +42,7 @@ const FilterSchema = z.object({
     .number()
     .int()
     .min(1, { message: 'Số lần tối thiểu phải >= 1' }),
+  year: z.coerce.number().int().min(1900, { message: 'Năm phải >= 1900' }),
 });
 
 type FilterValues = z.infer<typeof FilterSchema>;
@@ -55,16 +56,20 @@ export default function ThongKeDichVuBenhNhanPage() {
     resolver: zodResolver(FilterSchema),
     defaultValues: {
       min: 1,
+      year: new Date().getFullYear(),
     },
   });
 
-  const loadData = async (min: number): Promise<void> => {
+  const loadData = async (min: number, year: number): Promise<void> => {
     setLoading(true);
     setError(null);
 
+    console.log('Fetching data with min =', min, 'and year =', year);
     try {
       const res = await fetch(
-        `/api/thongke/dichvu-benhnhan?min=${encodeURIComponent(String(min))}`
+        `/api/thongke/dichvu-benhnhan?min=${encodeURIComponent(
+          String(min)
+        )}&year=${encodeURIComponent(String(year))}`
       );
       const json = (await res.json()) as ApiResponse<ServiceUsage>;
 
@@ -85,11 +90,11 @@ export default function ThongKeDichVuBenhNhanPage() {
   };
 
   useEffect(() => {
-    void loadData(form.getValues('min'));
+    void loadData(form.getValues('min'), form.getValues('year'));
   }, []);
 
   const onSubmit = (values: FilterValues): void => {
-    void loadData(values.min);
+    void loadData(values.min, values.year);
   };
 
   return (
@@ -116,6 +121,19 @@ export default function ThongKeDichVuBenhNhanPage() {
                     <FormLabel>Số lần sử dụng tối thiểu</FormLabel>
                     <FormControl>
                       <Input type='number' min={1} {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name='year'
+                render={({ field }) => (
+                  <FormItem className='w-full md:w-64'>
+                    <FormLabel>Năm</FormLabel>
+                    <FormControl>
+                      <Input type='number' {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
